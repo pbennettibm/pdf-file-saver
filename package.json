@@ -1,0 +1,27 @@
+{
+  "name": "email-attachment-csv-scraper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pbennettibm/email-attachment-csv-scraper.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pbennettibm/email-attachment-csv-scraper/issues"
+  },
+  "homepage": "https://github.com/pbennettibm/email-attachment-csv-scraper#readme",
+  "dependencies": {
+    "base64-stream": "^1.0.0",
+    "fs": "^0.0.1-security",
+    "imap": "^0.8.19",
+    "node": "^17.7.2",
+    "simple-node-logger": "^21.8.12"
+  }
+}
