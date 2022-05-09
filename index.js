@@ -71,6 +71,7 @@ function buildAttMessageFunction(attachment, emailFrom, emailDate) {
         filename,
         info
       );
+      console.log(filename);
       var writeStream = fs.createWriteStream(
         formatFilename(filename, emailFrom, emailDate)
       );
@@ -86,7 +87,7 @@ function buildAttMessageFunction(attachment, emailFrom, emailDate) {
     });
     msg.once('end', function () {
       logger.debug(prefix + 'Finished attachment %s', filename);
-      logger.info(`Attachment downloaded: ${filename}`);
+      logger.info(`PDF attachment downloaded: ${filename}`);
     });
   };
 }
@@ -146,10 +147,12 @@ imap.once('ready', function () {
                 struct: true,
               });
 
-              f.on(
-                'message',
-                buildAttMessageFunction(attachment, emailFrom, emailDate)
-              );
+              if (attachment.params.name.endsWith('.pdf')) {
+                f.on(
+                  'message',
+                  buildAttMessageFunction(attachment, emailFrom, emailDate)
+                );
+              }
             }
           });
 
