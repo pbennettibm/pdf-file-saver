@@ -19,30 +19,24 @@ const logger = require('simple-node-logger').createSimpleLogger(
 );
 logger.setLevel(config.logs?.level || 'debug');
 
-// var emailDate;
-// var emailFrom;
 function formatFilename(filename, emailFrom, emailDate) {
-  // defaults to current filename:
   let name = filename;
-  // if custom config is present:
+
   if (config.downloads) {
-    // if format provided, use it to build filename:
     if (config.downloads.filenameFormat) {
       name = config.downloads.filenameFormat;
-      // converts from field from "Full Name <fullname@mydomain.com>" into "fullname":
       name = name.replace(
         '$FROM',
         emailFrom.replace(/.*</i, '').replace('>', '').replace(/@.*/i, '')
       );
-      // parses text date and uses timestamp:
       name = name.replace('$DATE', new Date(emailDate).getTime());
       name = name.replace('$FILENAME', filename);
     }
-    // if directory provided, use it:
+
     if (config.downloads.directory)
       name = `${config.downloads.directory}/${name}`;
   }
-  // return formatted filename:
+
   return name;
 }
 
@@ -72,7 +66,6 @@ function buildAttMessageFunction(attachment, emailFrom, emailDate) {
   return function (msg, seqno) {
     var prefix = '(#' + seqno + ') ';
     msg.on('body', function (stream, info) {
-      //Create a write stream so that we can stream the attachment to file;
       logger.debug(
         prefix + 'Streaming this attachment to file',
         filename,
@@ -85,12 +78,9 @@ function buildAttMessageFunction(attachment, emailFrom, emailDate) {
         logger.debug(prefix + 'Done writing to file %s', filename);
       });
 
-      //so we decode during streaming using
       if (encoding.toLowerCase() === 'base64') {
-        //the stream is base64 encoded, so here the stream is decode on the fly and piped to the write stream (file)
         stream.pipe(new Base64Decode()).pipe(writeStream);
       } else {
-        //here we have none or some other decoding streamed directly to the file which renders it useless probably
         stream.pipe(writeStream);
       }
     });
@@ -109,12 +99,11 @@ imap.once('ready', function () {
       if (err) throw err;
 
       if (!results.length) {
-        // if now unread messages, log and end connection:
         logger.info('No new emails found');
         imap.end();
       } else {
         logger.info(`Found ${results.length} unread emails`);
-        // if unread messages, fetch and process:
+
         var f = imap.fetch(results, {
           bodies: ['HEADER.FIELDS (FROM TO SUBJECT DATE)'],
           struct: true,
@@ -136,7 +125,6 @@ imap.once('ready', function () {
             stream.once('end', function () {
               const parsedHeader = Imap.parseHeader(buffer);
               logger.debug(prefix + 'Parsed header: %s', parsedHeader);
-              // set to global vars so they can be used later to format filename:
               emailFrom = parsedHeader.from[0];
               emailDate = parsedHeader.date[0];
               logger.info(`Email from ${emailFrom} with date ${emailDate}`);
@@ -157,7 +145,7 @@ imap.once('ready', function () {
                 bodies: [attachment.partID],
                 struct: true,
               });
-              //build function to process attachment message
+
               f.on(
                 'message',
                 buildAttMessageFunction(attachment, emailFrom, emailDate)
