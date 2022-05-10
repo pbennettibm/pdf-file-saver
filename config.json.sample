@@ -12,7 +12,7 @@
   },
   "downloads": {
     "directory": "./downloads",
-    "filenameFormat": "$DATE_$FROM_$FILENAME"
+    "filenameFormat": "$FILENAME_$FROM_$DATE"
   },
   "logs": {
     "level": "info",

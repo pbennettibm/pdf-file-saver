@@ -10,13 +10,13 @@ const { Base64Decode } = require('base64-stream');
 const Imap = require('imap');
 const imap = new Imap(config.imap);
 
-// Simple logger:
 const logger = require('simple-node-logger').createSimpleLogger(
   config.logs?.simpleNodeLogger || {
     logFilePath: 'mail-downloader.log',
     timestampFormat: 'YYYY-MM-DD HH:mm:ss.SSS',
   }
 );
+
 logger.setLevel(config.logs?.level || 'debug');
 
 function formatFilename(filename, emailFrom, emailDate) {
@@ -42,7 +42,8 @@ function formatFilename(filename, emailFrom, emailDate) {
 
 function findAttachmentParts(struct, attachments) {
   attachments = attachments || [];
-  for (var i = 0, len = struct.length, r; i < len; ++i) {
+
+  for (let i = 0, len = struct.length, r; i < len; ++i) {
     if (Array.isArray(struct[i])) {
       findAttachmentParts(struct[i], attachments);
     } else {
@@ -64,15 +65,14 @@ function buildAttMessageFunction(attachment, emailFrom, emailDate) {
   const encoding = attachment.encoding;
 
   return function (msg, seqno) {
-    var prefix = '(#' + seqno + ') ';
+    const prefix = '(#' + seqno + ') ';
     msg.on('body', function (stream, info) {
       logger.debug(
         prefix + 'Streaming this attachment to file',
         filename,
         info
       );
-      console.log(filename);
-      var writeStream = fs.createWriteStream(
+      const writeStream = fs.createWriteStream(
         formatFilename(filename, emailFrom, emailDate)
       );
       writeStream.on('finish', function () {
@@ -85,6 +85,7 @@ function buildAttMessageFunction(attachment, emailFrom, emailDate) {
         stream.pipe(writeStream);
       }
     });
+
     msg.once('end', function () {
       logger.debug(prefix + 'Finished attachment %s', filename);
       logger.info(`PDF attachment downloaded: ${filename}`);
@@ -96,6 +97,7 @@ imap.once('ready', function () {
   logger.info('Connected');
   imap.openBox('INBOX', !markAsRead, function (err, box) {
     if (err) throw err;
+
     imap.search(['UNSEEN'], function (err, results) {
       if (err) throw err;
 
@@ -104,8 +106,7 @@ imap.once('ready', function () {
         imap.end();
       } else {
         logger.info(`Found ${results.length} unread emails`);
-
-        var f = imap.fetch(results, {
+        const f = imap.fetch(results, {
           bodies: ['HEADER.FIELDS (FROM TO SUBJECT DATE)'],
           struct: true,
           markSeen: markAsRead,
@@ -114,12 +115,11 @@ imap.once('ready', function () {
         f.on('message', function (msg, seqno) {
           logger.debug('Message #%d', seqno);
           const prefix = '(#' + seqno + ') ';
-
-          var emailDate;
-          var emailFrom;
+          let emailDate;
+          let emailFrom;
 
           msg.on('body', function (stream, info) {
-            var buffer = '';
+            let buffer = '';
             stream.on('data', function (chunk) {
               buffer += chunk.toString('utf8');
             });
@@ -134,20 +134,17 @@ imap.once('ready', function () {
 
           msg.once('attributes', function (attrs) {
             const attachments = findAttachmentParts(attrs.struct);
+            logger.debug(prefix + 'Has attachments: %d', attachments.length);
+            logger.info(`Email with ${attachments.length} attachments`);
+            for (let i = 0, len = attachments.length; i < len; ++i) {
+              const attachment = attachments[i];
 
-            if (attachment.params.name.endsWith('.pdf')) {
-              logger.debug(
-                prefix + 'Has PDF attachments: %d',
-                attachments.length
-              );
-              logger.info(`Email with ${attachments.length} PDF attachments`);
-              for (var i = 0, len = attachments.length; i < len; ++i) {
-                const attachment = attachments[i];
+              if (attachment.params.name.endsWith('.pdf')) {
                 logger.debug(
                   prefix + 'Fetching PDF attachment %s',
                   attachment.params.name
                 );
-                var f = imap.fetch(attrs.uid, {
+                const f = imap.fetch(attrs.uid, {
                   bodies: [attachment.partID],
                   struct: true,
                 });
