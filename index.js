@@ -134,20 +134,24 @@ imap.once('ready', function () {
 
           msg.once('attributes', function (attrs) {
             const attachments = findAttachmentParts(attrs.struct);
-            logger.debug(prefix + 'Has attachments: %d', attachments.length);
-            logger.info(`Email with ${attachments.length} attachemnts`);
-            for (var i = 0, len = attachments.length; i < len; ++i) {
-              const attachment = attachments[i];
-              logger.debug(
-                prefix + 'Fetching attachment %s',
-                attachment.params.name
-              );
-              var f = imap.fetch(attrs.uid, {
-                bodies: [attachment.partID],
-                struct: true,
-              });
 
-              if (attachment.params.name.endsWith('.pdf')) {
+            if (attachment.params.name.endsWith('.pdf')) {
+              logger.debug(
+                prefix + 'Has PDF attachments: %d',
+                attachments.length
+              );
+              logger.info(`Email with ${attachments.length} PDF attachments`);
+              for (var i = 0, len = attachments.length; i < len; ++i) {
+                const attachment = attachments[i];
+                logger.debug(
+                  prefix + 'Fetching PDF attachment %s',
+                  attachment.params.name
+                );
+                var f = imap.fetch(attrs.uid, {
+                  bodies: [attachment.partID],
+                  struct: true,
+                });
+
                 f.on(
                   'message',
                   buildAttMessageFunction(attachment, emailFrom, emailDate)
