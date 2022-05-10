@@ -19,7 +19,7 @@ const logger = require('simple-node-logger').createSimpleLogger(
 
 logger.setLevel(config.logs?.level || 'debug');
 
-function formatFilename(filename, emailFrom, emailDate) {
+const formatFilename = (filename, emailFrom, emailDate) => {
   let name = filename;
 
   if (config.downloads) {
@@ -40,7 +40,7 @@ function formatFilename(filename, emailFrom, emailDate) {
   return name;
 }
 
-function findAttachmentParts(struct, attachments) {
+const findAttachmentParts = (struct, attachments) => {
   attachments = attachments || [];
 
   for (let i = 0, len = struct.length, r; i < len; ++i) {
@@ -60,23 +60,23 @@ function findAttachmentParts(struct, attachments) {
   return attachments;
 }
 
-function buildAttMessageFunction(attachment, emailFrom, emailDate) {
+const buildAttMessage = (attachment, emailFrom, emailDate) => {
   const filename = attachment.params.name;
+  const actualFileName = formatFilename(filename, emailFrom, emailDate);
   const encoding = attachment.encoding;
 
-  return function (msg, seqno) {
+  return (msg, seqno) => {
     const prefix = '(#' + seqno + ') ';
-    msg.on('body', function (stream, info) {
+    msg.on('body', (stream, info) => {
       logger.debug(
         prefix + 'Streaming this attachment to file',
         filename,
         info
       );
-      const writeStream = fs.createWriteStream(
-        formatFilename(filename, emailFrom, emailDate)
-      );
-      writeStream.on('finish', function () {
-        logger.debug(prefix + 'Done writing to file %s', filename);
+      const writeStream = fs.createWriteStream(actualFileName);
+      
+      writeStream.on('finish', () => {
+        logger.debug(prefix + 'Done writing to file %s', actualFileName);
       });
 
       if (encoding.toLowerCase() === 'base64') {
@@ -86,19 +86,19 @@ function buildAttMessageFunction(attachment, emailFrom, emailDate) {
       }
     });
 
-    msg.once('end', function () {
+    msg.once('end', () => {
       logger.debug(prefix + 'Finished attachment %s', filename);
-      logger.info(`PDF attachment downloaded: ${filename}`);
+      logger.info(`PDF attachment downloaded: ${actualFileName}`);
     });
   };
 }
 
-imap.once('ready', function () {
+imap.once('ready', () => {
   logger.info('Connected');
-  imap.openBox('INBOX', !markAsRead, function (err, box) {
+  imap.openBox('INBOX', !markAsRead, (err, box) => {
     if (err) throw err;
 
-    imap.search(['UNSEEN'], function (err, results) {
+    imap.search(['UNSEEN'], (err, results) => {
       if (err) throw err;
 
       if (!results.length) {
@@ -112,18 +112,18 @@ imap.once('ready', function () {
           markSeen: markAsRead,
         });
 
-        f.on('message', function (msg, seqno) {
+        f.on('message', (msg, seqno) => {
           logger.debug('Message #%d', seqno);
           const prefix = '(#' + seqno + ') ';
           let emailDate;
           let emailFrom;
 
-          msg.on('body', function (stream, info) {
+          msg.on('body', (stream, info) => {
             let buffer = '';
-            stream.on('data', function (chunk) {
+            stream.on('data', (chunk) => {
               buffer += chunk.toString('utf8');
             });
-            stream.once('end', function () {
+            stream.once('end', () => {
               const parsedHeader = Imap.parseHeader(buffer);
               logger.debug(prefix + 'Parsed header: %s', parsedHeader);
               emailFrom = parsedHeader.from[0];
@@ -132,7 +132,7 @@ imap.once('ready', function () {
             });
           });
 
-          msg.once('attributes', function (attrs) {
+          msg.once('attributes', (attrs) => {
             const attachments = findAttachmentParts(attrs.struct);
             logger.debug(prefix + 'Has attachments: %d', attachments.length);
             logger.info(`Email with ${attachments.length} attachments`);
@@ -151,22 +151,22 @@ imap.once('ready', function () {
 
                 f.on(
                   'message',
-                  buildAttMessageFunction(attachment, emailFrom, emailDate)
+                  buildAttMessage(attachment, emailFrom, emailDate)
                 );
               }
             }
           });
 
-          msg.once('end', function () {
+          msg.once('end', () => {
             logger.debug(prefix + 'Finished email');
           });
         });
 
-        f.once('error', function (err) {
+        f.once('error', (err) => {
           logger.error('Fetch error: ' + err);
         });
 
-        f.once('end', function () {
+        f.once('end', () => {
           logger.info('Done fetching all messages!');
           imap.end();
         });
@@ -175,11 +175,11 @@ imap.once('ready', function () {
   });
 });
 
-imap.once('error', function (err) {
+imap.once('error', (err) => {
   logger.error(err);
 });
 
-imap.once('end', function () {
+imap.once('end', () => {
   logger.info('Connection ended');
 });
 
