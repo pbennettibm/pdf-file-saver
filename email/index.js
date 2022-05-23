@@ -1,4 +1,4 @@
-const config = require('./config.json');
+const config = require('../config.json');
 const markAsRead =
   config.imapOptions && config.imapOptions.markAsRead
     ? config.imapOptions.markAsRead
